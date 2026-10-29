@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AiChatDemo — admin assistant</title>
+<style>
+  :root { --ink:#16171a; --bg:#0f1013; --panel:#191b1f; --line:#2a2d33;
+          --text:#e8e8e4; --muted:#9a9da5; --accent:#3fb98f; --warn:#e0a63f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+         background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 12px 20px; border-bottom: 1px solid var(--line);
+           display: flex; align-items: center; gap: 16px; }
+  header h1 { font-size: 15px; margin: 0; font-weight: 600; }
+  header .hint { color: var(--muted); font-size: 12px; }
+  #token { margin-left: auto; background: var(--panel); border: 1px solid var(--line);
+           color: var(--text); padding: 7px 10px; border-radius: 8px; font-size: 13px; width: 180px; }
+  main { flex: 1; display: grid; grid-template-columns: 1fr 1.2fr; gap: 0; min-height: 0; }
+  @media (max-width: 800px) { main { grid-template-columns: 1fr; } #data-col { display:none; } }
+
+  /* live data column */
+  #data-col { border-right: 1px solid var(--line); padding: 20px; overflow-y: auto; }
+  #data-col h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .12em;
+                 color: var(--muted); margin: 0 0 12px; }
+  .field { margin-bottom: 14px; }
+  .field .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .field .v { font-size: 15px; }
+  .svc { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--panel); }
+  .svc b { font-size: 14px; }
+  .svc p { margin: 3px 0 0; font-size: 13px; color: var(--muted); }
+  .svc .idx { float: right; font-size: 11px; color: var(--muted); }
+
+  /* chat column */
+  #chat-col { display: flex; flex-direction: column; min-height: 0; }
+  #log { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+  .msg { max-width: 80%; padding: 9px 13px; border-radius: 12px; font-size: 14px; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: #08211a; border-bottom-right-radius: 4px; }
+  .msg.model { align-self: flex-start; background: var(--panel); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.err { align-self: center; color: #ff8a80; font-size: 12px; }
+  .applied { align-self: flex-start; display: flex; flex-wrap: wrap; gap: 6px; }
+  .applied span { font-size: 11px; font-family: ui-monospace, Consolas, monospace;
+                  background: #10281f; color: var(--accent); border: 1px solid #1d4a38;
+                  border-radius: 999px; padding: 3px 10px; }
+  form { display: flex; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line); }
+  #input { flex: 1; background: var(--panel); border: 1px solid var(--line); color: var(--text);
+           padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+  form button { padding: 10px 16px; border: none; border-radius: 8px;
+                background: var(--accent); color: #08211a; font-weight: 600; cursor: pointer; }
+  form button:disabled { opacity: .5; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Admin assistant</h1>
+    <span class="hint">try: “change the tagline to something bolder”, “add a photography service”, “remove consulting”</span>
+    <input id="token" type="password" placeholder="admin token" value="letmein">
+  </header>
+  <main>
+    <div id="data-col">
+      <h2>Live site data <a href="/" target="_blank" style="color:var(--accent)">(open site ↗)</a></h2>
+      <div id="data"></div>
+    </div>
+    <div id="chat-col">
+      <div id="log"></div>
+      <form id="form">
+        <input id="input" placeholder="Tell the assistant what to change…" autocomplete="off">
+        <button type="submit" id="send">Send</button>
+      </form>
+    </div>
+  </main>
+
+<script>
+  const history = [];
+  const log = document.getElementById("log");
+  const input = document.getElementById("input");
+  const send = document.getElementById("send");
+
+  async function loadData() {
+    const site = await (await fetch("/api/site")).json();
+    const el = document.getElementById("data");
+    el.innerHTML = "";
+    for (const key of ["title", "tagline", "announcement", "contactEmail"]) {
+      const div = document.createElement("div");
+      div.className = "field";
+      const k = document.createElement("div"); k.className = "k"; k.textContent = key;
+      const v = document.createElement("div"); v.className = "v"; v.textContent = site[key];
+      div.append(k, v);
+      el.append(div);
+    }
+    const k = document.createElement("div"); k.className = "k"; k.textContent = "services";
+    k.style.marginBottom = "8px";
+    el.append(k);
+    site.services.forEach((s, i) => {
+      const div = document.createElement("div");
+      div.className = "svc";
+      const idx = document.createElement("span"); idx.className = "idx"; idx.textContent = "#" + i;
+      const b = document.createElement("b"); b.textContent = s.name;
+      const p = document.createElement("p"); p.textContent = s.description;
+      div.append(idx, b, p);
+      el.append(div);
+    });
+  }
+  loadData();
+
+  function bubble(cls, text) {
+    const div = document.createElement("div");
+    div.className = "msg " + cls;
+    div.textContent = text;
+    log.append(div);
+    log.scrollTop = log.scrollHeight;
+    return div;
+  }
+
+  document.getElementById("form").onsubmit = async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    send.disabled = true;
+    history.push({ role: "user", text });
+    bubble("user", text);
+    const pending = bubble("model", "…");
+    try {
+      const res = await fetch("/api/admin/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-token": document.getElementById("token").value,
+        },
+        body: JSON.stringify({ messages: history }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      pending.textContent = data.reply;
+      history.push({ role: "model", text: data.reply });
+      if (data.applied && data.applied.length) {
+        const wrap = document.createElement("div");
+        wrap.className = "applied";
+        for (const a of data.applied) {
+          const tag = document.createElement("span");
+          tag.textContent = "✔ " + a;
+          wrap.append(tag);
+        }
+        log.append(wrap);
+        log.scrollTop = log.scrollHeight;
+      }
+      loadData(); // reflect changes immediately
+    } catch (err) {
+      pending.remove();
+      history.pop();
+      bubble("err", err.message);
+    } finally {
+      send.disabled = false;
+      input.focus();
+    }
+  };
+</script>
+</body>
+</html>

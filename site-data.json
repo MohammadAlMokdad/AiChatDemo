@@ -1,0 +1,20 @@
+{
+  "title": "Acme Studio",
+  "tagline": "We build small, sharp digital products.",
+  "announcement": "Now booking projects for Q4 2026.",
+  "contactEmail": "hello@example.com",
+  "services": [
+    {
+      "name": "Web design",
+      "description": "Marketing sites and landing pages that load fast and read well."
+    },
+    {
+      "name": "Branding",
+      "description": "Logos, type, and color systems for young companies."
+    },
+    {
+      "name": "Consulting",
+      "description": "A senior pair of eyes on your product, one day at a time."
+    }
+  ]
+}

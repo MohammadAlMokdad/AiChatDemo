@@ -1,0 +1,12 @@
+{
+  "name": "ai-chat-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Visitor chatbot + admin AI assistant (Gemini free tier), zero dependencies",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

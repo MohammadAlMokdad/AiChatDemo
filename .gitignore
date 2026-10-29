@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs and debug output
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output and caches
+dist/
+build/
+.cache/
+coverage/
+
+# Deployment metadata
+.vercel/
+.netlify/
+
+# Editors, IDEs and AI assistants
+.vscode/
+.idea/
+*.swp
+.claude/
+CLAUDE.md
+AGENTS.md
+
+# Media and recordings
+*.mp4
+*.mov
+*.mkv
+*.webm
+*.avi
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
